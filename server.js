@@ -1,32 +1,40 @@
 const express = require("express");
 const axios = require("axios");
 const cors = require("cors");
+const { Telegraf } = require("telegraf");
 require("dotenv").config();
 
+// Инициализация
 const app = express();
-const Port = process.env.PORT || 3000;
-
-app.use(cors());
-app.use(express.json());
+const PORT = process.env.PORT || 3000;
 
 const TELEGRAM_BOT_TOKEN = process.env.BOT_TOKEN;
 const CHANNEL_USERNAME = "@nix_ux_view";
 
-if (!TELEGRAM_BOT_TOKEN) {
-  console.error("❌ BOT_TOKEN is not set. Backend will run, but API won't work.");
-}
+// Express middlewares
+app.use(cors());
+app.use(express.json());
 
-// ✅ Health-check endpoint
-app.get("/", (req, res) => {
-  res.json({
-    status: "ok",
-    message: TELEGRAM_BOT_TOKEN
-      ? "Backend is running"
-      : "Backend is running, but BOT_TOKEN is missing",
+// Telegraf бот
+const bot = new Telegraf(TELEGRAM_BOT_TOKEN);
+
+// Команда /start с кнопкой
+bot.command("start", (ctx) => {
+  ctx.reply("Добро пожаловать! Нажмите кнопку ниже, чтобы открыть WebApp:", {
+    reply_markup: {
+      inline_keyboard: [
+        [
+          {
+            text: "🚀 Открыть приложение",
+            web_app: { url: "https://miniappfrontnew.vercel.app" },
+          },
+        ],
+      ],
+    },
   });
 });
 
-// ✅ API endpoint
+// Обработка /check-subscription
 app.post("/check-subscription", async (req, res) => {
   if (!TELEGRAM_BOT_TOKEN) {
     return res.status(500).json({ error: "BOT_TOKEN is missing" });
@@ -38,7 +46,7 @@ app.post("/check-subscription", async (req, res) => {
   }
 
   try {
-    const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getChatMember?chat_id=${CHANNEL_USERNAME}&user_id=${user_id}`;
+    const url = https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getChatMember?chat_id=${CHANNEL_USERNAME}&user_id=${user_id};
     const response = await axios.get(url);
 
     const status = response?.data?.result?.status;
@@ -47,7 +55,7 @@ app.post("/check-subscription", async (req, res) => {
     }
     res.json({ status: "not_subscribed" });
   } catch (error) {
-    console.error("❌ Telegram API error:", error?.response?.data || error.message);
+    console.error("Telegram API error:", error?.response?.data || error.message);
     res.status(500).json({
       error: "Telegram API error",
       details: error?.response?.data || error.message,
@@ -55,16 +63,26 @@ app.post("/check-subscription", async (req, res) => {
   }
 });
 
-bot.command("start", (ctx) => {
-  ctx.reply("Открой мини-приложение:", {
-    reply_markup: {
-      keyboard: [[{ text: "Открыть", web_app: { url: "https://miniappfrontnew.vercel.app" } }]],
-      resize_keyboard: true,
-      one_time_keyboard: true,
-    },
+// Health-check
+app.get("/", (req, res) => {
+  res.json({
+    status: "ok",
+    message: TELEGRAM_BOT_TOKEN
+      ? "Backend and Bot are running"
+      : "BOT_TOKEN missing",
   });
 });
 
-app.listen(Port, () => {
-  console.log(`✅ Backend running on port ${Port}`);
+// Запуск Express
+app.listen(PORT, () => {
+  console.log(✅ Server is running on port ${PORT});
 });
+
+// Запуск бота
+bot.launch().then(() => {
+  console.log("🤖 Bot is up and running");
+});
+
+// Для корректного завершения на хостинге (например, Render)
+process.once("SIGINT", () => bot.stop("SIGINT"));
+process.once("SIGTERM", () => bot.stop("SIGTERM"));
