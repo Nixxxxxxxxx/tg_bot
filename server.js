@@ -1,60 +1,46 @@
-const express = require("express");
-const axios = require("axios");
-const cors = require("cors");
-require("dotenv").config();
+import express from 'express';
+import { Telegraf } from 'telegraf';
+import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
+dotenv.config();
+
+const bot = new Telegraf(process.env.BOT_TOKEN);
 const app = express();
-const Port = process.env.PORT || 3000;
+const __filename = fileURLToPath(import.meta.url);
+const dirname = path.dirname(filename);
 
-app.use(cors());
+app.use('/web', express.static(path.join(__dirname, 'web')));
 app.use(express.json());
 
-const TELEGRAM_BOT_TOKEN = process.env.BOT_TOKEN;
-const CHANNEL_USERNAME = "@nix_ux_view";
+app.post('/check-subscription', async (req, res) => {
+  const userId = req.body.userId;
+  const channel = process.env.CHANNEL_USERNAME;
 
-if (!TELEGRAM_BOT_TOKEN) {
-  console.error("❌ BOT_TOKEN is not set. Backend will run, but API won't work.");
-}
+  try {
+    const member = await bot.telegram.getChatMember(channel, userId);
+    const isSubscribed = ['member', 'administrator', 'creator'].includes(member.status);
+    res.json({ ok: true, subscribed: isSubscribed });
+  } catch (err) {
+    res.json({ ok: false, error: err.message });
+  }
+});
 
-// ✅ Health-check endpoint
-app.get("/", (req, res) => {
-  res.json({
-    status: "ok",
-    message: TELEGRAM_BOT_TOKEN
-      ? "Backend is running"
-      : "Backend is running, but BOT_TOKEN is missing",
+bot.command('start', async (ctx) => {
+  await ctx.reply('Проверьте подписку на канал:', {
+    reply_markup: {
+      inline_keyboard: [[
+        {
+          text: 'Проверить подписку',
+          web_app: { url: process.env.WEBAPP_URL }
+        }
+      ]]
+    }
   });
 });
 
-// ✅ API endpoint
-app.post("/check-subscription", async (req, res) => {
-  if (!TELEGRAM_BOT_TOKEN) {
-    return res.status(500).json({ error: "BOT_TOKEN is missing" });
-  }
-
-  const { user_id } = req.body;
-  if (!user_id) {
-    return res.status(400).json({ error: "user_id is required" });
-  }
-
-  try {
-    const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getChatMember?chat_id=${CHANNEL_USERNAME}&user_id=${user_id}`;
-    const response = await axios.get(url);
-
-    const status = response?.data?.result?.status;
-    if (["member", "administrator", "creator"].includes(status)) {
-      return res.json({ status: "subscribed" });
-    }
-    res.json({ status: "not_subscribed" });
-  } catch (error) {
-    console.error("❌ Telegram API error:", error?.response?.data || error.message);
-    res.status(500).json({
-      error: "Telegram API error",
-      details: error?.response?.data || error.message,
-    });
-  }
-});
-
-app.listen(Port, () => {
-  console.log(`✅ Backend running on port ${Port}`);
+bot.launch();
+app.listen(process.env.PORT || 3000, () => {
+  console.log(`✅ Server running`);
 });
