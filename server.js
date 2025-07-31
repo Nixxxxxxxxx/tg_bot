@@ -46,7 +46,7 @@ app.post("/check-subscription", async (req, res) => {
   }
 
   try {
-    const url = https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getChatMember?chat_id=${CHANNEL_USERNAME}&user_id=${user_id};
+    const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getChatMember?chat_id=${CHANNEL_USERNAME}&user_id=${user_id}`;
     const response = await axios.get(url);
 
     const status = response?.data?.result?.status;
@@ -75,7 +75,7 @@ app.get("/", (req, res) => {
 
 // Запуск Express
 app.listen(PORT, () => {
-  console.log(✅ Server is running on port ${PORT});
+  console.log(`✅ Server is running on port ${PORT}`);
 });
 
 // Запуск бота
