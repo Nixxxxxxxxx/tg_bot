@@ -55,6 +55,16 @@ app.post("/check-subscription", async (req, res) => {
   }
 });
 
+bot.command("start", (ctx) => {
+  ctx.reply("Открой мини-приложение:", {
+    reply_markup: {
+      keyboard: [[{ text: "Открыть", web_app: { url: "https://miniappfrontnew.vercel.app" } }]],
+      resize_keyboard: true,
+      one_time_keyboard: true,
+    },
+  });
+});
+
 app.listen(Port, () => {
   console.log(`✅ Backend running on port ${Port}`);
 });
