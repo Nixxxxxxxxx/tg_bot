@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Подписка</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    body { font-family: sans-serif; text-align: center; padding: 20px; }
+    button { font-size: 18px; padding: 10px 20px; }
+  </style>
+</head>
+<body>
+  <h2>Проверка подписки</h2>
+  <button onclick="check()">Проверить</button>
+  <p id="result"></p>
+
+  <script>
+    const tg = window.Telegram.WebApp;
+    tg.expand();
+
+    async function check() {
+      const userId = tg.initDataUnsafe?.user?.id;
+
+      const response = await fetch('/check-subscription', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId })
+      });
+
+      const result = await response.json();
+      const output = document.getElementById('result');
+
+      if (!result.ok) {
+        output.innerText = 'Ошибка: ' + result.error;
+      } else if (result.subscribed) {
+        output.innerText = '✅ Вы подписаны!';
+      } else {
+        output.innerText = '❌ Подписка не найдена!';
+      }
+    }
+  </script>
+</body>
+</html>
